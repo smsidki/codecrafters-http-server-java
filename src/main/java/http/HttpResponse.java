@@ -34,7 +34,9 @@ public class HttpResponse {
     var encoding = request.getHeader("Accept-Encoding");
     if (StringUtils.isNotBlank(encoding)) {
       compressor = Compressor.of(encoding);
-      this.headers.put("Content-Encoding", encoding);
+      if (!compressor.equals(Compressor.NONE)) {
+        this.headers.put("Content-Encoding", encoding);
+      }
     }
 
     try(var os = socket.getOutputStream()) {
