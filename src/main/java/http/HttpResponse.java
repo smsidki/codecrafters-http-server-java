@@ -31,16 +31,13 @@ public class HttpResponse {
   }
 
   public void write(Socket socket, HttpRequest request) {
-    var responseBody = new byte[0];
     var compressor = Compressor.NONE;
 
     if (request != null) {
       var encoding = request.getHeader("Accept-Encoding");
       if (StringUtils.isNotBlank(encoding)) {
         compressor = Compressor.valueOf(encoding);
-        responseBody = compressor.compress(this.body);
         this.headers.put("Content-Encoding", encoding);
-        this.headers.put("Content-Length", String.valueOf(responseBody.length));
       }
     }
 
@@ -49,7 +46,12 @@ public class HttpResponse {
         .map(entry -> "%s: %s\r\n".formatted(entry.getKey(), entry.getValue()))
         .collect(Collectors.joining());
       var responseHeader = "HTTP/1.1 %s\r\n%s\r\n".formatted(this.status.value(), headerStr).getBytes();
+
+      var responseBody = compressor.compress(this.body);
+      this.headers.put("Content-Length", String.valueOf(responseBody.length));
+
       os.write(responseHeader);
+      os.flush();
       os.write(responseBody);
       os.flush();
     } catch (IOException e) {

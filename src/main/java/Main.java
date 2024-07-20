@@ -76,10 +76,7 @@ public class Main {
     HttpResponse.builder()
       .body(responseBody)
       .status(HttpStatus.OK)
-      .headers(Map.of(
-        "Content-Type", "text/plain",
-        "Content-Length", String.valueOf(responseBody.length())
-      ))
+      .headers(Map.of("Content-Type", "text/plain"))
       .build()
       .write(socket);
   }
@@ -89,10 +86,7 @@ public class Main {
     HttpResponse.builder()
       .body(responseBody)
       .status(HttpStatus.OK)
-      .headers(Map.of(
-        "Content-Type", "text/plain",
-        "Content-Length", String.valueOf(responseBody.length())
-      ))
+      .headers(Map.of("Content-Type", "text/plain"))
       .build()
       .write(socket);
   }
@@ -113,10 +107,7 @@ public class Main {
         HttpResponse.builder()
           .body(responseBody)
           .status(HttpStatus.OK)
-          .headers(Map.of(
-            "Content-Type", "application/octet-stream",
-            "Content-Length", String.valueOf(responseBody.length())
-          ))
+          .headers(Map.of("Content-Type", "application/octet-stream"))
           .build()
           .write(socket);
       } catch (FileNotFoundException e) {
