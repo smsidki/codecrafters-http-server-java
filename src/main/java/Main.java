@@ -26,6 +26,12 @@ public class Main {
        System.out.println("accepted new connection");
 
        var request = new HttpRequest(clientSocket.getInputStream());
+       if (request.getPath().equals("/")) {
+         writeResponse(clientSocket, HttpResponse.builder()
+           .status(HttpStatus.OK)
+           .build()
+         );
+       }
        if (request.getPath().startsWith("/echo")) {
          var responseBody = StringUtils.substringAfter(request.getPath(), "/echo/");
          var response = HttpResponse.builder()
@@ -39,7 +45,7 @@ public class Main {
          writeResponse(clientSocket, response);
        } else {
          writeResponse(clientSocket, HttpResponse.builder()
-           .status(HttpStatus.OK)
+           .status(HttpStatus.NOT_FOUND)
            .build()
          );
        }
