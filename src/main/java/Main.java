@@ -2,7 +2,11 @@ import http.HttpRequest;
 import http.HttpResponse;
 import http.HttpStatus;
 import org.apache.commons.lang3.StringUtils;
+import util.FileUtils;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -44,36 +48,72 @@ public class Main {
           .build()
           .write(socket);
       } else if (request.getPath().startsWith("/echo")) {
-        var responseBody = StringUtils.substringAfter(request.getPath(), "/echo/");
-        HttpResponse.builder()
-          .body(responseBody)
-          .status(HttpStatus.OK)
-          .headers(Map.of(
-            "Content-Type", "text/plain",
-            "Content-Length", String.valueOf(responseBody.length())
-          ))
-          .build()
-          .write(socket);
+        handleEcho(socket, request);
       } else if (request.getPath().equals("/user-agent")) {
-        var responseBody = request.getHeaders().get("User-Agent");
-        HttpResponse.builder()
-          .body(responseBody)
-          .status(HttpStatus.OK)
-          .headers(Map.of(
-            "Content-Type", "text/plain",
-            "Content-Length", String.valueOf(responseBody.length())
-          ))
-          .build()
-          .write(socket);
+        handleUserAgent(socket, request);
+      } else if (request.getPath().startsWith("/files")) {
+        handleFile(socket, request);
       } else {
-        HttpResponse.builder()
-          .status(HttpStatus.NOT_FOUND)
-          .build()
-          .write(socket);
+        handleNotFound(socket);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  static void handleEcho(Socket socket, HttpRequest request) {
+    var responseBody = StringUtils.substringAfter(request.getPath(), "/echo/");
+    HttpResponse.builder()
+      .body(responseBody)
+      .status(HttpStatus.OK)
+      .headers(Map.of(
+        "Content-Type", "text/plain",
+        "Content-Length", String.valueOf(responseBody.length())
+      ))
+      .build()
+      .write(socket);
+  }
+
+  static void handleUserAgent(Socket socket, HttpRequest request) {
+    var responseBody = request.getHeaders().get("User-Agent");
+    HttpResponse.builder()
+      .body(responseBody)
+      .status(HttpStatus.OK)
+      .headers(Map.of(
+        "Content-Type", "text/plain",
+        "Content-Length", String.valueOf(responseBody.length())
+      ))
+      .build()
+      .write(socket);
+  }
+
+  static void handleFile(Socket socket, HttpRequest request) {
+    var fileName = StringUtils.substringAfter(request.getPath(), "/files/");
+    var file = new File(fileName);
+    try(var is = new FileInputStream(file)) {
+      var responseBody = FileUtils.readFile(is);
+      HttpResponse.builder()
+        .body(responseBody)
+        .status(HttpStatus.OK)
+        .headers(Map.of(
+          "Content-Type", "application/octet-stream",
+          "Content-Length", String.valueOf(responseBody.length())
+        ))
+        .build()
+        .write(socket);
+    } catch (FileNotFoundException e) {
+      System.err.println("File not found: " + e.getMessage());
+      handleNotFound(socket);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  static void handleNotFound(Socket socket) {
+    HttpResponse.builder()
+      .status(HttpStatus.NOT_FOUND)
+      .build()
+      .write(socket);
   }
 
 }
