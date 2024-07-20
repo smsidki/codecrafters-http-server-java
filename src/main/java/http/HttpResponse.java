@@ -3,6 +3,7 @@ package http;
 import lombok.Builder;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
+import zip.Compressor;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -26,15 +27,30 @@ public class HttpResponse {
   }
 
   public void write(Socket socket) {
+    write(socket, null);
+  }
+
+  public void write(Socket socket, HttpRequest request) {
+    var responseBody = new byte[0];
+    var compressor = Compressor.NONE;
+
+    if (request != null) {
+      var encoding = request.getHeader("Accept-Encoding");
+      if (StringUtils.isNotBlank(encoding)) {
+        compressor = Compressor.valueOf(encoding);
+        responseBody = compressor.compress(this.body);
+        this.headers.put("Content-Encoding", encoding);
+        this.headers.put("Content-Length", String.valueOf(responseBody.length));
+      }
+    }
+
     try(var os = socket.getOutputStream()) {
       var headerStr = this.headers.entrySet().stream()
         .map(entry -> "%s: %s\r\n".formatted(entry.getKey(), entry.getValue()))
         .collect(Collectors.joining());
-      var responseStr = "HTTP/1.1 %s\r\n%s\r\n%s".formatted(
-        this.status.value(), headerStr, this.body
-      );
-      System.out.println("Writing response: " + responseStr);
-      os.write(responseStr.getBytes());
+      var responseHeader = "HTTP/1.1 %s\r\n%s\r\n".formatted(this.status.value(), headerStr).getBytes();
+      os.write(responseHeader);
+      os.write(responseBody);
       os.flush();
     } catch (IOException e) {
       throw new RuntimeException(e);

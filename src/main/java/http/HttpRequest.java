@@ -1,5 +1,6 @@
 package http;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
@@ -16,6 +17,8 @@ public class HttpRequest {
   private final String body;
   private final String path;
   private final String method;
+
+  @Getter(AccessLevel.PRIVATE)
   private final Map<String, String> headers;
 
   public HttpRequest(InputStream is) throws IOException {

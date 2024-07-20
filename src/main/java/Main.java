@@ -85,7 +85,7 @@ public class Main {
   }
 
   static void handleUserAgent(Socket socket, HttpRequest request) {
-    var responseBody = request.getHeaders().get("User-Agent");
+    var responseBody = request.getHeader("User-Agent");
     HttpResponse.builder()
       .body(responseBody)
       .status(HttpStatus.OK)
