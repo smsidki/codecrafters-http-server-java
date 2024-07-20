@@ -32,7 +32,11 @@ public class HttpRequest {
       rawHeaders = reader.readLine();
     }
 
-    this.body = reader.readLine();
+    var body = new StringBuilder();
+    while (reader.ready()) {
+      body.append((char) reader.read());
+    }
+    this.body = body.toString();
   }
 
 }
