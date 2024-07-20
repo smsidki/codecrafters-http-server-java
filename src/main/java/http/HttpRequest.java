@@ -32,11 +32,24 @@ public class HttpRequest {
       rawHeaders = reader.readLine();
     }
 
-    var body = new StringBuilder();
-    while (reader.ready()) {
-      body.append((char) reader.read());
+    var contentLength = Integer.parseInt(this.headers.getOrDefault("Content-Length", "0"));
+    if (contentLength == 0) {
+      this.body = null;
+    } else {
+      var body = new StringBuilder();
+      while (reader.ready()) {
+        body.append((char) reader.read());
+      }
+      this.body = body.toString();
     }
-    this.body = body.toString();
+  }
+
+  public boolean hasBody() {
+    return body != null;
+  }
+
+  public String getHeader(String name) {
+    return headers.getOrDefault(name, StringUtils.EMPTY);
   }
 
 }

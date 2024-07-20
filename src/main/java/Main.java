@@ -100,9 +100,8 @@ public class Main {
   static void handleFile(Socket socket, HttpRequest request, Arg arg) {
     var filePath = Path.of(arg.directory, StringUtils.substringAfter(request.getPath(), "/files"));
 
-    var contentType = request.getHeaders().get("Content-Type");
-    var contentLength = Integer.parseInt(request.getHeaders().get("Content-Length"));
-    if ("application/octet-stream".equalsIgnoreCase(contentType) && contentLength != 0) {
+    var contentType = request.getHeader("Content-Type");
+    if (contentType.equalsIgnoreCase("application/octet-stream") && request.hasBody()) {
       FileUtils.writeFile(filePath, request.getBody());
       HttpResponse.builder()
         .status(HttpStatus.CREATED)
