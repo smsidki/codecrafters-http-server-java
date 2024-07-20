@@ -14,11 +14,10 @@ public class HttpRequest {
   private final String method;
 
   public HttpRequest(InputStream is) throws IOException {
-    try(var reader = new BufferedReader(new InputStreamReader(is))) {
-      var requestLine = reader.readLine().split(" ");
-      this.method = requestLine[0];
-      this.path = requestLine[1];
-    }
+    var reader = new BufferedReader(new InputStreamReader(is));
+    var requestLine = reader.readLine().split(" ");
+    this.method = requestLine[0];
+    this.path = requestLine[1];
   }
 
 }
