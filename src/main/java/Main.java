@@ -1,8 +1,13 @@
 import http.HttpRequest;
+import http.HttpResponse;
+import http.HttpStatus;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Main {
 
@@ -21,27 +26,38 @@ public class Main {
        System.out.println("accepted new connection");
 
        var request = new HttpRequest(clientSocket.getInputStream());
-       if (request.getPath().equals("/")) {
-         writeOK(clientSocket, "", "");
+       if (request.getPath().startsWith("/echo")) {
+         var responseBody = StringUtils.substringAfter(request.getPath(), "/echo/");
+         var response = HttpResponse.builder()
+           .body(responseBody)
+           .status(HttpStatus.OK)
+           .headers(Map.of(
+             "Content-Type", "text/plain",
+             "Content-Length", String.valueOf(responseBody.length())
+           ))
+           .build();
+         writeResponse(clientSocket, response);
        } else {
-         writeNotFound(clientSocket, "", "");
+         writeResponse(clientSocket, HttpResponse.builder()
+           .status(HttpStatus.NOT_FOUND)
+           .build()
+         );
        }
      } catch (IOException e) {
        System.out.println("IOException: " + e.getMessage());
      }
   }
 
-  static void writeOK(Socket socket, String header, String body) {
-    writeResponse(socket, "200 OK", header, body);
-  }
-
-  static void writeNotFound(Socket socket, String header, String body) {
-    writeResponse(socket, "404 Not Found", header, body);
-  }
-
-  static void writeResponse(Socket clientSocket, String status, String header, String body) {
+  static void writeResponse(Socket clientSocket, HttpResponse response) {
     try(var os = clientSocket.getOutputStream()) {
-      os.write("HTTP/1.1 %s\r\n%s\r\n%s".formatted(status, header, body).getBytes());
+      var headerStr = response.getHeaders().entrySet().stream()
+        .map(entry -> "%s: %s\r\n".formatted(entry.getKey(), entry.getValue()))
+        .collect(Collectors.joining());
+      var responseStr = "HTTP/1.1 %s\r\n%s\r\n%s".formatted(
+        response.getStatus().value(), headerStr, response.getBody()
+      );
+      System.out.println("Writing response: " + responseStr);
+      os.write(responseStr.getBytes());
       os.flush();
     } catch (IOException e) {
       throw new RuntimeException(e);
