@@ -39,7 +39,7 @@ public class Main {
          writeResponse(clientSocket, response);
        } else {
          writeResponse(clientSocket, HttpResponse.builder()
-           .status(HttpStatus.NOT_FOUND)
+           .status(HttpStatus.OK)
            .build()
          );
        }
