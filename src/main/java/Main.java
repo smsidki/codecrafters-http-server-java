@@ -88,7 +88,7 @@ public class Main {
   }
 
   static void handleFile(Socket socket, HttpRequest request) {
-    var fileName = StringUtils.substringAfter(request.getPath(), "/files/");
+    var fileName = "/tmp/%s".formatted(StringUtils.substringAfter(request.getPath(), "/files/"));
     var file = new File(fileName);
     try(var is = new FileInputStream(file)) {
       var responseBody = FileUtils.readFile(is);
