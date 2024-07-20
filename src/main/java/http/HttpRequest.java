@@ -13,6 +13,7 @@ import java.util.Map;
 @Getter
 public class HttpRequest {
 
+  private final String body;
   private final String path;
   private final String method;
   private final Map<String, String> headers;
@@ -30,6 +31,8 @@ public class HttpRequest {
       this.headers.put(kv[0], kv[1]);
       rawHeaders = reader.readLine();
     }
+
+    this.body = reader.readLine();
   }
 
 }

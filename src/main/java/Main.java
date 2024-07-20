@@ -98,23 +98,34 @@ public class Main {
   }
 
   static void handleFile(Socket socket, HttpRequest request, Arg arg) {
-    var file = Path.of(arg.directory, StringUtils.substringAfter(request.getPath(), "/files")).toFile();
-    try(var is = new FileInputStream(file)) {
-      var responseBody = FileUtils.readFile(is);
+    var filePath = Path.of(arg.directory, StringUtils.substringAfter(request.getPath(), "/files"));
+
+    var contentType = request.getHeaders().get("Content-Type");
+    var contentLength = Integer.parseInt(request.getHeaders().get("Content-Length"));
+    if ("application/octet-stream".equalsIgnoreCase(contentType) && contentLength != 0) {
+      FileUtils.writeFile(filePath, request.getBody());
       HttpResponse.builder()
-        .body(responseBody)
-        .status(HttpStatus.OK)
-        .headers(Map.of(
-          "Content-Type", "application/octet-stream",
-          "Content-Length", String.valueOf(responseBody.length())
-        ))
+        .status(HttpStatus.CREATED)
         .build()
         .write(socket);
-    } catch (FileNotFoundException e) {
-      System.err.println("File not found: " + e.getMessage());
-      handleNotFound(socket);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    } else {
+      try(var is = new FileInputStream(filePath.toFile())) {
+        var responseBody = FileUtils.readFile(is);
+        HttpResponse.builder()
+          .body(responseBody)
+          .status(HttpStatus.OK)
+          .headers(Map.of(
+            "Content-Type", "application/octet-stream",
+            "Content-Length", String.valueOf(responseBody.length())
+          ))
+          .build()
+          .write(socket);
+      } catch (FileNotFoundException e) {
+        System.err.println("File not found: " + e.getMessage());
+        handleNotFound(socket);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 

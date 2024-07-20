@@ -1,6 +1,7 @@
 package util;
 
 import java.io.*;
+import java.nio.file.Path;
 
 public final class FileUtils {
 
@@ -15,6 +16,14 @@ public final class FileUtils {
         line = reader.readLine();
       }
       return sb.toString();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static void writeFile(Path path, String content) {
+    try(var writer = new BufferedWriter(new FileWriter(path.toFile()))) {
+      writer.write(content);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
