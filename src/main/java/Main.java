@@ -5,9 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class Main {
 
@@ -27,47 +25,41 @@ public class Main {
 
        var request = new HttpRequest(clientSocket.getInputStream());
        if (request.getPath().equals("/")) {
-         writeResponse(clientSocket, HttpResponse.builder()
+         HttpResponse.builder()
            .status(HttpStatus.OK)
            .build()
-         );
-       }
-       if (request.getPath().startsWith("/echo")) {
+           .write(clientSocket);
+       } else if (request.getPath().startsWith("/echo")) {
          var responseBody = StringUtils.substringAfter(request.getPath(), "/echo/");
-         var response = HttpResponse.builder()
+         HttpResponse.builder()
            .body(responseBody)
            .status(HttpStatus.OK)
            .headers(Map.of(
              "Content-Type", "text/plain",
              "Content-Length", String.valueOf(responseBody.length())
            ))
-           .build();
-         writeResponse(clientSocket, response);
+           .build()
+           .write(clientSocket);
+       } else if (request.getPath().equals("/user-agent")) {
+         var responseBody = request.getHeaders().get("User-Agent");
+         HttpResponse.builder()
+           .body(responseBody)
+           .status(HttpStatus.OK)
+           .headers(Map.of(
+             "Content-Type", "text/plain",
+             "Content-Length", String.valueOf(responseBody.length())
+           ))
+           .build()
+           .write(clientSocket);
        } else {
-         writeResponse(clientSocket, HttpResponse.builder()
+         HttpResponse.builder()
            .status(HttpStatus.NOT_FOUND)
            .build()
-         );
+           .write(clientSocket);
        }
      } catch (IOException e) {
        System.out.println("IOException: " + e.getMessage());
      }
-  }
-
-  static void writeResponse(Socket clientSocket, HttpResponse response) {
-    try(var os = clientSocket.getOutputStream()) {
-      var headerStr = response.getHeaders().entrySet().stream()
-        .map(entry -> "%s: %s\r\n".formatted(entry.getKey(), entry.getValue()))
-        .collect(Collectors.joining());
-      var responseStr = "HTTP/1.1 %s\r\n%s\r\n%s".formatted(
-        response.getStatus().value(), headerStr, response.getBody()
-      );
-      System.out.println("Writing response: " + responseStr);
-      os.write(responseStr.getBytes());
-      os.flush();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
   }
 
 }
