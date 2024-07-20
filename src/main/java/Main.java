@@ -1,21 +1,24 @@
 import http.HttpRequest;
 import http.HttpResponse;
 import http.HttpStatus;
+import lombok.Builder;
 import org.apache.commons.lang3.StringUtils;
 import util.FileUtils;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
 public class Main {
 
   public static void main(String[] args) {
+    var arg = Arg.builder().directory(args[1]).build();
+
     // You can use print statements as follows for debugging, they'll be visible when running tests.
     System.out.println("Logs from your program will appear here!");
 
@@ -31,7 +34,7 @@ public class Main {
       while (true) {
         var clientSocket = serverSocket.accept(); // Wait for connection from client.
         System.out.println("accepted new connection");
-        executor.submit(() -> handleRequest(clientSocket));
+        executor.submit(() -> handleRequest(clientSocket, arg));
       }
 
     } catch (IOException e) {
@@ -39,7 +42,7 @@ public class Main {
     }
   }
 
-  static void handleRequest(Socket socket) {
+  static void handleRequest(Socket socket, Arg arg) {
     try {
       var request = new HttpRequest(socket.getInputStream());
       if (request.getPath().equals("/")) {
@@ -52,7 +55,7 @@ public class Main {
       } else if (request.getPath().equals("/user-agent")) {
         handleUserAgent(socket, request);
       } else if (request.getPath().startsWith("/files")) {
-        handleFile(socket, request);
+        handleFile(socket, request, arg);
       } else {
         handleNotFound(socket);
       }
@@ -87,9 +90,8 @@ public class Main {
       .write(socket);
   }
 
-  static void handleFile(Socket socket, HttpRequest request) {
-    var fileName = "/tmp/%s".formatted(StringUtils.substringAfter(request.getPath(), "/files/"));
-    var file = new File(fileName);
+  static void handleFile(Socket socket, HttpRequest request, Arg arg) {
+    var file = Path.of(arg.directory, StringUtils.substringAfter(request.getPath(), "/files")).toFile();
     try(var is = new FileInputStream(file)) {
       var responseBody = FileUtils.readFile(is);
       HttpResponse.builder()
@@ -115,5 +117,8 @@ public class Main {
       .build()
       .write(socket);
   }
+
+  @Builder
+  record Arg(String directory) { }
 
 }
