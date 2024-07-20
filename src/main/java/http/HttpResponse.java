@@ -40,13 +40,12 @@ public class HttpResponse {
     }
 
     try(var os = socket.getOutputStream()) {
-      var headerStr = this.headers.entrySet().stream()
-        .map(entry -> "%s: %s\r\n".formatted(entry.getKey(), entry.getValue()))
-        .collect(Collectors.joining());
-      var responseHeader = "HTTP/1.1 %s\r\n%s\r\n".formatted(this.status.value(), headerStr).getBytes();
-
       var responseBody = compressor.compress(this.body);
       this.headers.put("Content-Length", String.valueOf(responseBody.length));
+
+      var responseHeader = "HTTP/1.1 %s\r\n%s\r\n"
+        .formatted(this.status.value(), this.getHeadersAsString())
+        .getBytes();
 
       os.write(responseHeader);
       os.flush();
@@ -60,6 +59,12 @@ public class HttpResponse {
   public HttpResponse addHeader(String key, String value) {
     this.headers.put(key, value);
     return this;
+  }
+
+  public String getHeadersAsString() {
+    return this.headers.entrySet().stream()
+      .map(entry -> "%s: %s\r\n".formatted(entry.getKey(), entry.getValue()))
+      .collect(Collectors.joining());
   }
 
 }
