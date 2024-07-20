@@ -1,3 +1,5 @@
+import http.HttpRequest;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -18,16 +20,31 @@ public class Main {
        var clientSocket = serverSocket.accept(); // Wait for connection from client.
        System.out.println("accepted new connection");
 
-       writeResponse(clientSocket, "", "");
+       var request = new HttpRequest(clientSocket.getInputStream());
+       if (request.getPath().equals("/")) {
+         writeOK(clientSocket, "", "");
+       } else {
+         writeNotFound(clientSocket, "", "");
+       }
      } catch (IOException e) {
        System.out.println("IOException: " + e.getMessage());
      }
   }
 
-  static void writeResponse(Socket clientSocket, String header, String body) throws IOException {
+  static void writeOK(Socket socket, String header, String body) {
+    writeResponse(socket, "200 OK", header, body);
+  }
+
+  static void writeNotFound(Socket socket, String header, String body) {
+    writeResponse(socket, "404 Not Found", header, body);
+  }
+
+  static void writeResponse(Socket clientSocket, String status, String header, String body) {
     try(var os = clientSocket.getOutputStream()) {
-      os.write("HTTP/1.1 200 OK\r\n%s\r\n%s".formatted(header, body).getBytes());
+      os.write("HTTP/1.1 %s\r\n%s\r\n%s".formatted(status, header, body).getBytes());
       os.flush();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
