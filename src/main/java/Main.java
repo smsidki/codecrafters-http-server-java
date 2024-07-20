@@ -12,7 +12,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.concurrent.Executors;
 
 public class Main {
@@ -41,7 +40,16 @@ public class Main {
       while (true) {
         var clientSocket = serverSocket.accept(); // Wait for connection from client.
         System.out.println("accepted new connection");
-        executor.submit(() -> handleRequest(clientSocket, arg.build()));
+        executor.submit(() -> {
+          try {
+            handleRequest(clientSocket, arg.build());
+          } catch (Exception e) {
+            System.err.println("Failed to handle request: " + e.getMessage());
+            for (StackTraceElement stackTraceElement : e.getStackTrace()) {
+              System.err.println(stackTraceElement);
+            }
+          }
+        });
       }
 
     } catch (IOException e) {
@@ -56,7 +64,7 @@ public class Main {
         HttpResponse.builder()
           .status(HttpStatus.OK)
           .build()
-          .write(socket);
+          .write(socket, request);
       } else if (request.getPath().startsWith("/echo")) {
         handleEcho(socket, request);
       } else if (request.getPath().equals("/user-agent")) {
@@ -64,7 +72,7 @@ public class Main {
       } else if (request.getPath().startsWith("/files")) {
         handleFile(socket, request, arg);
       } else {
-        handleNotFound(socket);
+        handleNotFound(socket, request);
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -76,9 +84,9 @@ public class Main {
     HttpResponse.builder()
       .body(responseBody)
       .status(HttpStatus.OK)
-      .headers(Map.of("Content-Type", "text/plain"))
       .build()
-      .write(socket);
+      .addHeader("Content-Type", "text/plain")
+      .write(socket, request);
   }
 
   static void handleUserAgent(Socket socket, HttpRequest request) {
@@ -86,9 +94,9 @@ public class Main {
     HttpResponse.builder()
       .body(responseBody)
       .status(HttpStatus.OK)
-      .headers(Map.of("Content-Type", "text/plain"))
       .build()
-      .write(socket);
+      .addHeader("Content-Type", "text/plain")
+      .write(socket, request);
   }
 
   static void handleFile(Socket socket, HttpRequest request, Arg arg) {
@@ -100,30 +108,30 @@ public class Main {
       HttpResponse.builder()
         .status(HttpStatus.CREATED)
         .build()
-        .write(socket);
+        .write(socket, request);
     } else {
       try(var is = new FileInputStream(filePath.toFile())) {
         var responseBody = FileUtils.readFile(is);
         HttpResponse.builder()
           .body(responseBody)
           .status(HttpStatus.OK)
-          .headers(Map.of("Content-Type", "application/octet-stream"))
           .build()
-          .write(socket);
+          .addHeader("Content-Type", "application/octet-stream")
+          .write(socket, request);
       } catch (FileNotFoundException e) {
         System.err.println("File not found: " + e.getMessage());
-        handleNotFound(socket);
+        handleNotFound(socket, request);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
   }
 
-  static void handleNotFound(Socket socket) {
+  static void handleNotFound(Socket socket, HttpRequest request) {
     HttpResponse.builder()
       .status(HttpStatus.NOT_FOUND)
       .build()
-      .write(socket);
+      .write(socket, request);
   }
 
   @Builder

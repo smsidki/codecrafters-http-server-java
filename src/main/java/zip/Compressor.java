@@ -27,6 +27,21 @@ public enum Compressor {
     }
   };
 
+  private static final Compressor[] COMPRESSORS;
+
+  static {
+    COMPRESSORS = values();
+  }
+
   public abstract byte[] compress(String content);
+
+  public static Compressor of(String name) {
+    for (Compressor compressor : COMPRESSORS) {
+      if (compressor.name().equalsIgnoreCase(name)) {
+        return compressor;
+      }
+    }
+    return NONE;
+  }
 
 }
