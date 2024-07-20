@@ -11,13 +11,20 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
 public class Main {
 
   public static void main(String[] args) {
-    var arg = Arg.builder().directory(args[1]).build();
+    System.out.println("Args: " + Arrays.toString(args));
+    var arg = Arg.builder();
+    if (args.length > 1) {
+      if (args[0].equals("--directory")) {
+        arg.directory(args[1]);
+      }
+    }
 
     // You can use print statements as follows for debugging, they'll be visible when running tests.
     System.out.println("Logs from your program will appear here!");
@@ -34,7 +41,7 @@ public class Main {
       while (true) {
         var clientSocket = serverSocket.accept(); // Wait for connection from client.
         System.out.println("accepted new connection");
-        executor.submit(() -> handleRequest(clientSocket, arg));
+        executor.submit(() -> handleRequest(clientSocket, arg.build()));
       }
 
     } catch (IOException e) {
