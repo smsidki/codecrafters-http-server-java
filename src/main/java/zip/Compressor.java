@@ -15,6 +15,7 @@ public enum Compressor {
         var gzip = new GZIPOutputStream(os)
       ) {
         gzip.write(content.getBytes(StandardCharsets.UTF_8));
+        gzip.finish();
         return os.toByteArray();
       } catch (IOException e) {
         throw new RuntimeException(e);
