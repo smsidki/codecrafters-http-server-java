@@ -2,6 +2,7 @@ package zip;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPOutputStream;
 
 public enum Compressor {
@@ -13,7 +14,7 @@ public enum Compressor {
         var os = new ByteArrayOutputStream();
         var gzip = new GZIPOutputStream(os)
       ) {
-        gzip.write(content.getBytes());
+        gzip.write(content.getBytes(StandardCharsets.UTF_8));
         return os.toByteArray();
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -23,7 +24,7 @@ public enum Compressor {
   NONE {
     @Override
     public byte[] compress(String content) {
-      return content.getBytes();
+      return content.getBytes(StandardCharsets.UTF_8);
     }
   };
 
