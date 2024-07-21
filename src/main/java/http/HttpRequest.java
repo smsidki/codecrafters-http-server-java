@@ -8,7 +8,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -53,6 +55,13 @@ public class HttpRequest {
 
   public String getHeader(String name) {
     return headers.getOrDefault(name, StringUtils.EMPTY);
+  }
+
+  public List<String> getHeaders(String name) {
+    return Arrays
+      .stream(StringUtils.split(this.getHeader(name), ","))
+      .map(String::trim)
+      .toList();
   }
 
 }

@@ -8,7 +8,9 @@ import zip.Compressor;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -19,7 +21,7 @@ public class HttpResponse {
   private final HttpStatus status;
 
   @Getter(AccessLevel.PRIVATE)
-  private final Map<String, String> headers;
+  private final Map<String, List<String>> headers;
 
   @Builder
   public HttpResponse(String body, HttpStatus status) {
@@ -31,17 +33,16 @@ public class HttpResponse {
   public void write(Socket socket, HttpRequest request) {
     var compressor = Compressor.NONE;
 
-    var encoding = request.getHeader("Accept-Encoding");
-    if (StringUtils.isNotBlank(encoding)) {
+    for (var encoding : request.getHeaders("Accept-Encoding")) {
       compressor = Compressor.of(encoding);
       if (!compressor.equals(Compressor.NONE)) {
-        this.headers.put("Content-Encoding", encoding);
+        this.addHeader("Content-Encoding", encoding);
       }
     }
 
     try(var os = socket.getOutputStream()) {
       var responseBody = compressor.compress(this.body);
-      this.headers.put("Content-Length", String.valueOf(responseBody.length));
+      this.addHeader("Content-Length", String.valueOf(responseBody.length));
 
       var responseHeader = "HTTP/1.1 %s\r\n%s\r\n"
         .formatted(this.status.value(), this.getHeadersAsString())
@@ -57,13 +58,15 @@ public class HttpResponse {
   }
 
   public HttpResponse addHeader(String key, String value) {
-    this.headers.put(key, value);
+    this.headers.computeIfAbsent(key, exKey -> new ArrayList<>()).add(value);
     return this;
   }
 
   public String getHeadersAsString() {
     return this.headers.entrySet().stream()
-      .map(entry -> "%s: %s\r\n".formatted(entry.getKey(), entry.getValue()))
+      .map(entry -> "%s: %s\r\n".formatted(
+        entry.getKey(), String.join(", ", entry.getValue())
+      ))
       .collect(Collectors.joining());
   }
 
